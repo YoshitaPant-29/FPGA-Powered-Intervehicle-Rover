@@ -1,0 +1,137 @@
+#include <esp_now.h>
+#include <WiFi.h>
+#include <BluetoothSerial.h>
+
+// Define motor control pins for L298N
+#define IN1 23
+#define IN2 22
+#define IN3 21
+#define IN4 19
+
+BluetoothSerial SerialBT;
+
+// Replace with the MAC addresses of the slave ESP32s
+uint8_t slaveAddress1[] = {0xFC, 0xB4, 0x67, 0x92, 0x33, 0xD8}; // MAC address of Slave 1
+uint8_t slaveAddress2[] = {0xFC, 0xB4, 0x67, 0x92, 0x60, 0x50}; // MAC address of Slave 2
+
+// Create peerInfo structs for each slave
+esp_now_peer_info_t peerInfo1;
+esp_now_peer_info_t peerInfo2;
+
+void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+    // Reduce the serial output for space optimization
+    if (status == ESP_NOW_SEND_SUCCESS) {
+        Serial.println("ESP-NOW: Message Sent Successfully");
+    } else {
+        Serial.println("ESP-NOW: Failed to Send Message");
+    }
+}
+
+void setup() {
+    // Start the serial communication for debugging
+    Serial.begin(115200);
+    while (!Serial) { delay(10); }  // Wait for Serial Monitor to initialize
+    
+    Serial.println("Initializing Bluetooth...");
+    
+    // Initialize Bluetooth with the name "ESP32_Master"
+    if (!SerialBT.begin("ESP32_Master")) {  
+        Serial.println("Error: Bluetooth initialization failed!");
+        return;  // Stop further execution if Bluetooth fails
+    } else {
+        Serial.println("Bluetooth initialized as 'ESP32_Master'");
+    }
+
+    // Set ESP32 WiFi mode for ESP-NOW communication
+    WiFi.mode(WIFI_STA);
+
+    // Initialize ESP-NOW
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("Error: ESP-NOW Init Failed");
+        return;  // Stop further execution if ESP-NOW fails
+    }
+    esp_now_register_send_cb(onDataSent);
+    Serial.println("ESP-NOW initialized");
+
+    // Setup Peer 1
+    memcpy(peerInfo1.peer_addr, slaveAddress1, 6);
+    peerInfo1.channel = 0;
+    peerInfo1.encrypt = false;
+    if (esp_now_add_peer(&peerInfo1) != ESP_OK) {
+        Serial.println("Error: Peer 1 add failed");
+        return;
+    } else {
+        Serial.println("Peer 1 added successfully");
+    }
+
+    // Setup Peer 2
+    memcpy(peerInfo2.peer_addr, slaveAddress2, 6);
+    peerInfo2.channel = 0;
+    peerInfo2.encrypt = false;
+    if (esp_now_add_peer(&peerInfo2) != ESP_OK) {
+        Serial.println("Error: Peer 2 add failed");
+        return;
+    } else {
+        Serial.println("Peer 2 added successfully");
+    }
+
+    // Initialize motor control pins
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    pinMode(IN3, OUTPUT);
+    pinMode(IN4, OUTPUT);
+    Serial.println("Motor control pins initialized");
+}
+
+void loop() {
+    if (SerialBT.available()) {
+        char command = SerialBT.read(); // Read the command from Bluetooth
+        Serial.print("Received command via Bluetooth: ");
+        Serial.println(command);  // Debug print
+
+        // Send command to both slaves via ESP-NOW
+        esp_now_send(slaveAddress1, (uint8_t *)&command, sizeof(command));
+        esp_now_send(slaveAddress2, (uint8_t *)&command, sizeof(command));
+
+        // Control motors based on the received command
+        controlMotors(command);
+    }
+}
+
+void controlMotors(char command) {
+    switch (command) {
+        case 'F': // Move forward
+            digitalWrite(IN1, HIGH);
+            digitalWrite(IN2, LOW);
+            digitalWrite(IN3, HIGH);
+            digitalWrite(IN4, LOW);
+            break;
+        case 'B': // Move backward
+            digitalWrite(IN1, LOW);
+            digitalWrite(IN2, HIGH);
+            digitalWrite(IN3, LOW);
+            digitalWrite(IN4, HIGH);
+            break;
+        case 'L': // Turn left
+            digitalWrite(IN1, LOW);
+            digitalWrite(IN2, HIGH);
+            digitalWrite(IN3, HIGH);
+            digitalWrite(IN4, LOW);
+            break;
+        case 'R': // Turn right
+            digitalWrite(IN1, HIGH);
+            digitalWrite(IN2, LOW);
+            digitalWrite(IN3, LOW);
+            digitalWrite(IN4, HIGH);
+            break;
+        case 'S': // Stop
+            digitalWrite(IN1, LOW);
+            digitalWrite(IN2, LOW);
+            digitalWrite(IN3, LOW);
+            digitalWrite(IN4, LOW);
+            break;
+        default:
+            Serial.println("Unknown command received");
+            break; // Do nothing for unrecognized commands
+    }
+}
