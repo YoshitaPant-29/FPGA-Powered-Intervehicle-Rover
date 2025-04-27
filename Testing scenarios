@@ -1,0 +1,9 @@
+#Designed test scenarios for packet loss, distance, and latency
+
+I created test cases to measure packet delivery success under different conditions, such as:
+
+Varying distances between ESP32s.
+
+Environments with Wi-Fi/Bluetooth interference.
+
+High-rate packet bursts. I collected metrics like RSSI (signal strength), packet timestamps, and loss rates to validate the robustness and speed of the communication.
