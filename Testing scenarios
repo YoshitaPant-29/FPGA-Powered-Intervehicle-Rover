@@ -1,4 +1,4 @@
-#Designed test scenarios for packet loss, distance, and latency
+# Designed test scenarios for packet loss, distance, and latency
 
 I created test cases to measure packet delivery success under different conditions, such as:
 
@@ -7,3 +7,29 @@ Varying distances between ESP32s.
 Environments with Wi-Fi/Bluetooth interference.
 
 High-rate packet bursts. I collected metrics like RSSI (signal strength), packet timestamps, and loss rates to validate the robustness and speed of the communication.
+
+# Communication Flow
+Initialization
+
+Initialize ESP-NOW on both devices.
+
+Exchange and add peer MAC addresses.
+
+Sending Data
+
+ESP32-A prepares a packet.
+
+Uses esp_now_send() to send it to ESP32-B.
+
+Receiving Data
+
+ESP32-B triggers onDataRecv().
+
+Packet is decoded and processed.
+
+Acknowledgment (optional)
+
+ESP32-B can send a small ACK packet back if needed.
+
+Error Handling
+
