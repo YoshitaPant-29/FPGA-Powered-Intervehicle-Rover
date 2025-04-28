@@ -1,0 +1,66 @@
+module spi_master(
+    input wire clk,            // System clock
+    input wire rst,            // Reset
+    input wire start,          // Start signal to initiate SPI transfer
+    input wire [7:0] data_in,  // Data to send
+    output reg busy,           // Busy signal
+    output reg mosi,           // Master Out Slave In
+    input wire miso,           // Master In Slave Out (not used in basic version)
+    output reg sclk,           // SPI Clock
+    output reg cs             // Chip Select (Active Low)
+);
+
+// SPI Clock divider
+parameter CLK_DIV = 25; // Adjust for SPI speed (based on FPGA clock)
+reg [5:0] clk_count;
+reg spi_clk;
+
+// SPI transfer
+reg [2:0] bit_count;
+reg [7:0] data_buf;
+reg transfer;
+
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        clk_count <= 0;
+        spi_clk <= 0;
+    end else begin
+        if (clk_count == CLK_DIV) begin
+            clk_count <= 0;
+            spi_clk <= ~spi_clk; // Toggle SPI clock
+        end else begin
+            clk_count <= clk_count + 1;
+        end
+    end
+end
+
+assign sclk = spi_clk;
+
+always @(posedge spi_clk or posedge rst) begin
+    if (rst) begin
+        cs <= 1;
+        mosi <= 0;
+        bit_count <= 0;
+        busy <= 0;
+        transfer <= 0;
+    end else begin
+        if (start && !busy) begin
+            cs <= 0; // Select slave
+            busy <= 1;
+            transfer <= 1;
+            bit_count <= 7;
+            data_buf <= data_in;
+        end else if (transfer) begin
+            mosi <= data_buf[bit_count];
+            if (bit_count == 0) begin
+                transfer <= 0;
+                cs <= 1; // Deselect slave
+                busy <= 0;
+            end else begin
+                bit_count <= bit_count - 1;
+            end
+        end
+    end
+end
+
+endmodule
