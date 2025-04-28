@@ -1,0 +1,22 @@
+Important:
+Basys3 FPGA I/Os are 3.3V, so they are compatible with ESP32 WROOM directly. 
+#How This Works:
+When start is made HIGH, the FPGA starts shifting out bits MSB first on MOSI.
+
+SCLK toggles at a divided frequency.
+
+CS is pulled LOW while transmitting.
+
+Once 8 bits are sent, CS goes HIGH again.
+
+busy output tells you whether SPI is active.
+
+## Connections
+FPGA Pin (Basys3) | ESP32 Pin
+MOSI output       | SPI DIN (Master out to Slave in)
+MISO input        | SPI DOUT (Slave out to Master in) (optional)
+SCLK output       | SPI CLK
+CS output         | SPI CS
+
+First, we slow down the system clock. Second, we activate communication on start, shift each data bit onto MOSI line at every SPI clock pulse, and third, after transmission, we cleanly stop the communication.
+
