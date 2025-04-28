@@ -15,3 +15,12 @@ Configured both ESP32s in WIFI_STA mode.
 Built a loop that sent data periodically (say every 100 ms).
 
 Set up receivers to instantly react on incoming data (example: control motors).
+
+Real-World Application Use-Cases
+✅ Search and Rescue in disaster-hit areas.
+✅ Agricultural monitoring over large fields.
+✅ Remote military reconnaissance.
+✅ Space exploration (Mars rovers concept).
+✅ Industrial warehouse automation.
+
+
